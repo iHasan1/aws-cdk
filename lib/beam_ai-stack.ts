@@ -5,6 +5,8 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as customResources from 'aws-cdk-lib/custom-resources';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 export class BeamAiStack extends Stack {
@@ -82,7 +84,7 @@ export class BeamAiStack extends Stack {
       runtime:  lambda.Runtime.NODEJS_18_X,
       handler: 'initdb.handler',
       code: lambda.Code.fromAsset('./db'),
-      timeout: Duration.minutes(10),
+      timeout: Duration.minutes(5),
       layers: [layer],
       environment: {
         DATABASE_SECRET_ARN: dbSecret.secretArn,
@@ -93,8 +95,30 @@ export class BeamAiStack extends Stack {
     // Give the Lambda function permissions to read the secret
     dbSecret.grantRead(dbInItLambda);
 
-    // Give the Lambda function permissions to connect to the RDS instance
-    // orderDBInstance.connections.allowDefaultPortFrom(dbInItLambda);
+    // Define a Custom Resource that will invoke the SingletonFunction
+    const dbSchemaInitCustomResource = new customResources.AwsCustomResource(this, 'DbSchemaInitCustomResource', {
+      onCreate: { // You can also use onUpdate or onDelete if needed
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: dbInItLambda.functionName,
+          // Include additional parameters if needed
+        },
+        physicalResourceId: customResources.PhysicalResourceId.of(dbInItLambda.functionArn) // Use the log result as the ID
+      },
+      policy: customResources.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: ['lambda:InvokeFunction'],
+          resources: [dbInItLambda.functionArn]
+        })
+      ])
+    });
+
+    // Make sure the Lambda is invoked only after being created
+    dbSchemaInitCustomResource.node.addDependency(dbInItLambda);
+
+
+
 
     //Creating Queues using SQS
     const orderQueue = new sqs.Queue(this, 'orderQueue', {

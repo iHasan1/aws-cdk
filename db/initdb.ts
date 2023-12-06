@@ -1,27 +1,26 @@
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
-const AWS = require('aws-sdk');
 const mysql = require('mysql2');
 
 
-exports.handler = async function(event: any, context: any) {
-    const secret_name = "orderDBSecret9E787992-cU0F4xMroIDB";
+exports.handler = async function (event: any, context: any) {
+    const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
 
     const client = new SecretsManagerClient({
-    region: "us-east-1",
+        region: "us-east-1",
     });
 
     let response;
 
     try {
-    response = await client.send(
-        new GetSecretValueCommand({
-        SecretId: secret_name,
-        VersionStage: "AWSCURRENT",
-        })
-    );
+        response = await client.send(
+            new GetSecretValueCommand({
+                SecretId: secret_name,
+                VersionStage: "AWSCURRENT",
+            })
+        );
     } catch (error) {
-        
-    throw error;
+
+        throw error;
     }
 
     const secret = response.SecretString;
@@ -48,27 +47,27 @@ exports.handler = async function(event: any, context: any) {
     const inventory = `
         CREATE TABLE Inventory (
             item_id INT AUTO_INCREMENT PRIMARY KEY,
-            name varchar NOT NULL,
+            name VARCHAR(255) NOT NULL,
             quantity INT NOT NULL,
             unit_price INT NOT NULL,
-            description TEXT NOT NULL,
+            description TEXT NOT NULL
         );
     `;
 
-    
+
     const connection = mysql.createConnection({
         host: host,
         user: username,
         password: password,
         database: databaseName,
         port: port
-    })
+    });
 
-    connection.connect(function(err: any) {  
-        if (err) {    
+    connection.connect(function (err: any) {
+        if (err) {
             console.error('error connecting: ' + err.stack);
             return;
-        }   
+        }
         console.log('connected as id ' + connection.threadId);
     });
 
@@ -87,4 +86,4 @@ exports.handler = async function(event: any, context: any) {
     connection.end();
 
     // console.log("Connection Endded")
-}
+};

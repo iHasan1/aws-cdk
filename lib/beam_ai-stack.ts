@@ -168,11 +168,24 @@ export class BeamAiStack extends Stack {
       description: 'This is the API Gateway for Order Managment System'
     });
 
-    // Define Resource and Methods
-    const items = orderAPIGateway.root.addResource('items');
-    items.addMethod('GET');
-    items.addMethod('POST');
+    const items = orderAPIGateway.root.addResource('orders');
+    
+    // Adding API Gateway Integration with Lambda Function for CreateOrder
+    const lambdaIntegration = new apigateway.LambdaIntegration(createOrder, {
+      requestTemplates: {
+        'application/json': '{"statusCode": "200"}'
+      }
+    });
 
+    // Define Resource and Methods
+    // items.addMethod('GET');
+    items.addMethod('POST', lambdaIntegration);
+
+    //Granting Permissions to ApiGateway to Execute Lambda
+    createOrder.addPermission('createOrderLambdaPermission',{
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      sourceArn: orderAPIGateway.arnForExecuteApi('POST', '/orders', 'prod')
+    });
     // ---------------------------------------------------------------------------------------- //
   }
 }

@@ -5,35 +5,23 @@ import * as AWS from 'aws-sdk';
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';
 
-
 const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
-const secretsManager = new AWS.SecretsManager();
-
-interface Secret {
-    jwtSecret: string;
-    sqsQueueUrl: string;
-}
-
-async function getSecret(secretName: string): Promise<Secret> {
-    const data: any = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
-    if ('SecretString' in data) {
-        return JSON.parse(data.SecretString);
-    }
-    throw new Error('Secret not found or is not a string');
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+
+    console.log(event);
+
     try {
-        const secret = await getSecret('MySecretName');
+        const secret: string = (process.env.JWT) ? process.env.JWT : '';
 
         const token = event.headers.Authorization || event.headers.authorization;
         if (!token) {
             return { statusCode: 401, body: JSON.stringify({ message: 'No token provided.' }) };
         }
 
-        jwt.verify(token, secret.jwtSecret);
+        jwt.verify(token, secret);
 
-        const body = JSON.parse(event.body || '{}');
+        const body: any = event.body || '{}';
         if (!body.order_id || !body.customer_id || !body.order_date || !body.amount) {
             return { statusCode: 400, body: JSON.stringify({ message: 'Bad request: Missing required fields.' }) };
         }
@@ -48,9 +36,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             }
         }
 
+        const sqsUrl = 'https://sqs.us-east-1.amazonaws.com/503470143287/orderQueue';
+
         const params: AWS.SQS.SendMessageRequest = {
             MessageBody: JSON.stringify(body),
-            QueueUrl: secret.sqsQueueUrl,
+            QueueUrl: sqsUrl
         };
 
         await sqs.sendMessage(params).promise();

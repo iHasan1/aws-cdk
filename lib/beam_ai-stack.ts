@@ -20,6 +20,13 @@ export class BeamAiStack extends Stack {
 
     // ------------------ Creating Lambda Function for Services --------------------------- //
 
+    const CreateOrderlayer = new lambda.LayerVersion(this, 'createOrderLayer', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset('./functionLayers/createOrder')
+    });
+
+    const jwtSecretValue = 'your-hardcoded-jwt-secret-value';
+
     const createOrder = new lambda.Function(this, 'createOrder', {
       //The Runtime Enviroment of Lambda
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -30,7 +37,11 @@ export class BeamAiStack extends Stack {
       //Description about the purpose of Lambda
       description: 'This Create Order Function is Creating New Order, Code from Local Storage.',
       //Function name to be assigned
-      functionName: 'CreateOrderLambda'
+      layers: [CreateOrderlayer],
+      functionName: 'CreateOrderLambda',
+      environment: {
+        JWT: jwtSecretValue
+      }
     });
 
     const processOrder = new lambda.Function(this, 'processOrder', {
@@ -153,6 +164,8 @@ export class BeamAiStack extends Stack {
     const orderQueue = new sqs.Queue(this, 'orderQueue', {
       queueName: 'orderQueue'
     });
+
+    orderQueue.grantSendMessages(createOrder)
 
     const processQueue = new sqs.Queue(this, 'processQueue', {
       queueName: 'processQueue'

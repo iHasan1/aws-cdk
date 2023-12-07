@@ -1,37 +1,28 @@
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
+const client = new SecretsManagerClient({ region: "us-east-1" });
 
-exports.handler = async function (event: any, context: any) {
-    const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
-
-    const client = new SecretsManagerClient({
-        region: "us-east-1",
-    });
-
-    let response;
-
+async function getSecret(){
+    const secretARN = process.env.SECRET_ARN;
     try {
-        response = await client.send(
-            new GetSecretValueCommand({
-                SecretId: secret_name,
-                VersionStage: "AWSCURRENT",
-            })
-        );
+        const response = await client.send(new GetSecretValueCommand({ SecretId: secretARN }));
+        return JSON.parse(response.SecretString);
     } catch (error) {
-
+        console.error("Error retriving secret:", error);
         throw error;
     }
+}
 
-    const secret = response.SecretString;
+exports.handler = async function (event: any, context: any) {
 
-    const secretDB = JSON.parse(secret);
+    const secret = await getSecret();
 
-    const username = secretDB.username;
-    const host = secretDB.host;
-    const password = secretDB.password;
-    const databaseName = secretDB.dbname;
-    const port = secretDB.port;
+    const dbusername = secret.username;
+    const dbhost = secret.host;
+    const dbpassword = secret.password;
+    const dbdatabaseName = secret.dbname;
+    const dbport = secret.port;
 
     const customerOrder = `
         CREATE TABLE CustomerOrders (
@@ -54,36 +45,74 @@ exports.handler = async function (event: any, context: any) {
         );
     `;
 
+    try {
 
-    const connection = mysql.createConnection({
-        host: host,
-        user: username,
-        password: password,
-        database: databaseName,
-        port: port
-    });
+        const connection = await mysql.createConnection({
+            host: dbhost,
+            user: dbusername,
+            password: dbpassword,
+            database: dbdatabaseName,
+            port: dbport,
+            connectTimeout: 30000
+        });
 
-    connection.connect(function (err: any) {
-        if (err) {
-            console.error('error connecting: ' + err.stack);
-            return;
-        }
-        console.log('connected as id ' + connection.threadId);
-    });
-
-    // console.log("Connection Started");
-
-    connection.query(customerOrder, (error: any, results: any, fields: any) => {
-        if (error) throw error;
+        const customerOrderResult = await connection.query(customerOrder);
         console.log('Customer Order Schema initialized successfully');
-    });
 
-    connection.query(inventory, (error: any, results: any, fields: any) => {
-        if (error) throw error;
+        const inventoryResult = await connection.query(inventory);
         console.log('Inventory Schema initialized successfully');
-    });
+    
+        connection.end();
 
-    connection.end();
+        return { statusCode: 200, body: JSON.stringify({ message: 'Success in initializing database' }) };
 
-    // console.log("Connection Endded")
+    } catch (error) {
+        console.error(error);
+        return { statusCode: 500, body: JSON.stringify({ message: 'Error initializing database' }) };
+    }
 };
+
+
+// Useless Code For Reference 
+
+    // const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
+
+    // const client = new SecretsManagerClient({
+    //     region: "us-east-1",
+    // });
+
+    // let response;
+
+    // try {
+    //     response = await client.send(
+    //         new GetSecretValueCommand({
+    //             SecretId: secret_name,
+    //             VersionStage: "AWSCURRENT",
+    //         })
+    //     );
+    // } catch (error) {
+    //     console.log(error);
+    //     throw error;
+    // }
+
+    // const secret = response.SecretString;
+
+    // const secretDB = JSON.parse(secret);
+
+    // connection.connect(function (err: any) {
+    //     if (err) {
+    //         console.error('error connecting: ' + err.stack);
+    //         return;
+    //     }
+    //     console.log('connected as id ' + connection.threadId);
+    // });
+
+    // await connection.query(customerOrder, (error: any, results: any, fields: any) => {
+    //     if (error) throw error;
+    //     console.log('Customer Order Schema initialized successfully');
+    // });
+
+    // await connection.query(inventory, (error: any, results: any, fields: any) => {
+    //     if (error) throw error;
+    //     console.log('Inventory Schema initialized successfully');
+    // });

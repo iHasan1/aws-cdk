@@ -25,10 +25,10 @@ exports.handler = async function (event: any, context: any) {
     const dbport = secret.port;
 
     const customerOrder = `
-        CREATE TABLE CustomerOrders (
+        CREATE TABLE IF NOT EXISTS CustomerOrders (
             order_id INT AUTO_INCREMENT PRIMARY KEY,
             customer_id INT NOT NULL,
-            order_date DATE NOT NULL,
+            order_date DATETIME NOT NULL,
             orderItems JSON NOT NULL,
             status VARCHAR(100),
             amount INT NOT NULL
@@ -36,7 +36,7 @@ exports.handler = async function (event: any, context: any) {
     `;
 
     const inventory = `
-        CREATE TABLE Inventory (
+        CREATE TABLE IF NOT EXISTS Inventory (
             item_id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             quantity INT NOT NULL,

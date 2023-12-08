@@ -19,6 +19,16 @@ export class BeamAiStack extends Stack {
       isDefault: true
     });
 
+    // Creating Secret Key For Database.
+    const dbSecret = new secretmanager.Secret(this, 'orderDBSecret', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ username: 'dbuser' }),
+        generateStringKey: 'password',
+        excludePunctuation: true,
+        includeSpace: false
+      }
+    });
+
     // ------------------ Creating Lambda Function for Services --------------------------- //
 
     const CreateOrderlayer = new lambda.LayerVersion(this, 'createOrderLayer', {
@@ -45,12 +55,28 @@ export class BeamAiStack extends Stack {
       }
     });
 
+
+    const ProcessOrderlayer = new lambda.LayerVersion(this, 'processOrderLayer', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset('./functionLayers/processOrder')
+    });
+
     const processOrder = new lambda.Function(this, 'processOrder', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'processOrder.handler',
       code: lambda.Code.fromAsset('./services'),
       description: 'This Process Order Function is Processing Order, Code from Local storage.',
-      functionName: 'ProcessOrderLambda'
+      layers: [ProcessOrderlayer],
+      functionName: 'ProcessOrderLambda',
+      environment: {
+        SECRET_ARN: dbSecret.secretArn
+      }
+    });
+
+
+    const UpdateStocklayer = new lambda.LayerVersion(this, 'updateStockLayer', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset('./functionLayers/updateStock')
     });
 
     const updateStock = new lambda.Function(this, 'updateStock', {
@@ -58,7 +84,16 @@ export class BeamAiStack extends Stack {
       handler: 'updateStock.handler',
       code: lambda.Code.fromAsset('./services'),
       description: 'This Update Stock Function is Updating Database Stock, Code from Local storage',
-      functionName: 'UpdateStockLambda'
+      layers: [UpdateStocklayer],
+      functionName: 'UpdateStockLambda',
+      environment: {
+        SECRET_ARN: dbSecret.secretArn
+      }
+    });
+
+    const getOrderlayer = new lambda.LayerVersion(this, 'getOrderLayer', {
+      removalPolicy: RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset('./functionLayers/getOrder')
     });
 
     const getOrder = new lambda.Function(this, 'getOrder', {
@@ -66,22 +101,19 @@ export class BeamAiStack extends Stack {
       handler: 'getOrder.handler',
       code: lambda.Code.fromAsset('./services'),
       description: 'This Gets the Customer Orders from the Database, Code from Local Storage',
-      functionName: 'GetOrderLambda'
+      layers: [getOrderlayer],
+      functionName: 'GetOrderLambda',
+      environment: {
+        JWT: jwtSecretValue,
+        SECRET_ARN: dbSecret.secretArn
+      }
     });
 
     // ---------------------------------------------------------------------------------------- //
 
     // ------------------ Creating RDS MySQL Database & Its Components --------------------------- //
 
-    // Creating Secret Key For Database.
-    const dbSecret = new secretmanager.Secret(this, 'orderDBSecret', {
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({ username: 'dbuser' }),
-        generateStringKey: 'password',
-        excludePunctuation: true,
-        includeSpace: false
-      }
-    });
+    
 
     // Creating Security Group
     const rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecuirtyGroup', {
@@ -134,6 +166,9 @@ export class BeamAiStack extends Stack {
 
     // Give the Lambda function permissions to read the secret
     dbSecret.grantRead(dbInItLambda);
+    dbSecret.grantRead(updateStock);
+    dbSecret.grantRead(processOrder);
+    dbSecret.grantRead(getOrder);
 
     // Define a Custom Resource that will invoke the SingletonFunction
     const dbSchemaInitCustomResource = new customResources.AwsCustomResource(this, 'DbSchemaInitCustomResource', {
@@ -170,8 +205,11 @@ export class BeamAiStack extends Stack {
     orderQueue.grantSendMessages(createOrder)
 
     const processQueue = new sqs.Queue(this, 'processQueue', {
-      queueName: 'processQueue'
+      queueName: 'processQueue',
+      receiveMessageWaitTime: Duration.seconds(20)
     });
+
+    processQueue.grantSendMessages(processOrder)
 
     // ---------------------------------------------------------------------------------------- //
 
@@ -206,6 +244,12 @@ export class BeamAiStack extends Stack {
     // ------------------ Adding Integration of Lambda and Queue --------------------------- //
 
     processOrder.addEventSource(new lambdaEventSources.SqsEventSource(orderQueue, {
+      batchSize: 10,
+      maxBatchingWindow: Duration.seconds(20)
+    }));
+
+
+    updateStock.addEventSource(new lambdaEventSources.SqsEventSource(processQueue, {
       batchSize: 10,
       maxBatchingWindow: Duration.seconds(20)
     }));

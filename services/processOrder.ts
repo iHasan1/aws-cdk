@@ -2,5 +2,5 @@
 // Refer to documentation for creating Lambda Function
 
 exports.handler = async function(event: any){
-    return 'Process Order Service Called';
+    console.log("THIS IS PROCESS ORDER RECIEVED, PLEASE CONFIRM!")
 }

@@ -7,6 +7,7 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as customResources from 'aws-cdk-lib/custom-resources';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 
 export class BeamAiStack extends Stack {
@@ -162,7 +163,8 @@ export class BeamAiStack extends Stack {
     // ------------------ Creating SQS Queues --------------------------- //
     
     const orderQueue = new sqs.Queue(this, 'orderQueue', {
-      queueName: 'orderQueue'
+      queueName: 'orderQueue',
+      receiveMessageWaitTime: Duration.seconds(20)
     });
 
     orderQueue.grantSendMessages(createOrder)
@@ -199,6 +201,15 @@ export class BeamAiStack extends Stack {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       sourceArn: orderAPIGateway.arnForExecuteApi('POST', '/orders', 'prod')
     });
+    // ---------------------------------------------------------------------------------------- //
+
+    // ------------------ Adding Integration of Lambda and Queue --------------------------- //
+
+    processOrder.addEventSource(new lambdaEventSources.SqsEventSource(orderQueue, {
+      batchSize: 10,
+      maxBatchingWindow: Duration.seconds(20)
+    }));
+
     // ---------------------------------------------------------------------------------------- //
   }
 }

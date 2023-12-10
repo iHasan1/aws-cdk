@@ -1,6 +1,3 @@
-// https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html
-// Refer to documentation for creating Lambda Function
-
 import * as AWS from 'aws-sdk';
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';
@@ -82,8 +79,3 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ message: 'Internal server error.' }) };
     }
 };
-
-
-// exports.handler = async function (event: any) {
-//     return 'Create Order Service Called';
-// };

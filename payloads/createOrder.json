@@ -1,0 +1,12 @@
+{
+  "order_id": 111,
+  "customer_id": 1,
+  "order_date": "12/08/2023",
+  "orderItems": {
+    "1": {
+      "id": 1,
+      "quantity": 1
+    }
+  },
+  "amount": 100
+}

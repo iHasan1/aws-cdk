@@ -13,3 +13,12 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 * `cdk deploy`      deploy this stack to your default AWS account/region
 * `cdk diff`        compare deployed stack with current state
 * `cdk synth`       emits the synthesized CloudFormation template
+
+## Database - Inventory Insertion Query:
+
+INSERT INTO Inventory
+    // (name, quantity, unit_price, description)
+    // VALUES
+    // ('Blue Toy', 100, 10, 'A blue toy'),
+    // ('Red Toy', 100, 15, 'A red toy'),
+    // ('Yellow Toy', 100, 20, 'A yellow toy')

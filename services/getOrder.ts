@@ -1,6 +1,3 @@
-// https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html
-// Refer to documentation for creating Lambda Function
-
 import * as AWS from 'aws-sdk';
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';

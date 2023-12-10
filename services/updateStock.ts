@@ -1,5 +1,3 @@
-// https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html
-// Refer to documentation for creating Lambda Function
 import {SQSEvent, Context } from 'aws-lambda'
 import * as AWS from 'aws-sdk';
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");

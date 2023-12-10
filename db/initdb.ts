@@ -45,12 +45,12 @@ exports.handler = async function (event: any, context: any) {
         );
     `;
 
-    const createInventoryEntries = `INSERT INTO Inventory
-    (name, quantity, unit_price, description)
-    VALUES
-    ('Blue Toy', 100, 10, 'A blue toy'),
-    ('Red Toy', 100, 15, 'A red toy'),
-    ('Yellow Toy', 100, 20, 'A yellow toy')`;
+    // const createInventoryEntries = `INSERT INTO Inventory
+    // (name, quantity, unit_price, description)
+    // VALUES
+    // ('Blue Toy', 100, 10, 'A blue toy'),
+    // ('Red Toy', 100, 15, 'A red toy'),
+    // ('Yellow Toy', 100, 20, 'A yellow toy')`;
 
     try {
 
@@ -69,8 +69,8 @@ exports.handler = async function (event: any, context: any) {
         const inventoryResult = await connection.query(inventory);
         console.log('Inventory Schema initialized successfully');
 
-        const insertInventory = await connection.query(createInventoryEntries);
-        console.log('Inventory inserted successfully');
+        // const insertInventory = await connection.query(createInventoryEntries);
+        // console.log('Inventory inserted successfully');
 
         connection.end();
 
@@ -81,48 +81,3 @@ exports.handler = async function (event: any, context: any) {
         return { statusCode: 500, body: JSON.stringify({ message: 'Error initializing database' }) };
     }
 };
-
-
-// Useless Code For Reference
-
-// const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
-
-// const client = new SecretsManagerClient({
-//     region: "us-east-1",
-// });
-
-// let response;
-
-// try {
-//     response = await client.send(
-//         new GetSecretValueCommand({
-//             SecretId: secret_name,
-//             VersionStage: "AWSCURRENT",
-//         })
-//     );
-// } catch (error) {
-//     console.log(error);
-//     throw error;
-// }
-
-// const secret = response.SecretString;
-
-// const secretDB = JSON.parse(secret);
-
-// connection.connect(function (err: any) {
-//     if (err) {
-//         console.error('error connecting: ' + err.stack);
-//         return;
-//     }
-//     console.log('connected as id ' + connection.threadId);
-// });
-
-// await connection.query(customerOrder, (error: any, results: any, fields: any) => {
-//     if (error) throw error;
-//     console.log('Customer Order Schema initialized successfully');
-// });
-
-// await connection.query(inventory, (error: any, results: any, fields: any) => {
-//     if (error) throw error;
-//     console.log('Inventory Schema initialized successfully');
-// });

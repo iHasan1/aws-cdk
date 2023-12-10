@@ -35,7 +35,7 @@ export class BeamAiStack extends Stack {
       receiveMessageWaitTime: Duration.seconds(20)
     });
 
-    
+
     const processQueue = new sqs.Queue(this, 'processQueue', {
       queueName: 'processQueue',
       receiveMessageWaitTime: Duration.seconds(20)
@@ -43,23 +43,21 @@ export class BeamAiStack extends Stack {
 
     // ------------------ Creating Lambda Function for Services --------------------------- //
 
+    // JWT SECRET Token (should not be hardcoded here but for now doing it)
+    const jwtSecretValue = 'beam-ai-ordermanagement-task-123';
+
+    // Create layer for lambda function to use
     const CreateOrderlayer = new lambda.LayerVersion(this, 'createOrderLayer', {
       removalPolicy: RemovalPolicy.DESTROY,
       code: lambda.Code.fromAsset('./functionLayers/createOrder')
     });
 
-    const jwtSecretValue = 'your-hardcoded-jwt-secret-value';
-
     const createOrder = new lambda.Function(this, 'createOrder', {
       //The Runtime Enviroment of Lambda
       runtime: lambda.Runtime.NODEJS_18_X,
-      //Handler refers to the file stored in local files.
       handler: 'createOrder.handler',
-      //fromAsset used to load local files as Lambda Handler.
       code: lambda.Code.fromAsset('./services'),
-      //Description about the purpose of Lambda
       description: 'This Create Order Function is Creating New Order, Code from Local Storage.',
-      //Function name to be assigned
       layers: [CreateOrderlayer],
       functionName: 'CreateOrderLambda',
       environment: {
@@ -68,7 +66,7 @@ export class BeamAiStack extends Stack {
       }
     });
 
-
+    // ProcessOrderlayer and ProcessOrder Lambda function
     const ProcessOrderlayer = new lambda.LayerVersion(this, 'processOrderLayer', {
       removalPolicy: RemovalPolicy.DESTROY,
       code: lambda.Code.fromAsset('./functionLayers/processOrder')
@@ -87,7 +85,7 @@ export class BeamAiStack extends Stack {
       }
     });
 
-
+    // UpdateStocklayer and UpdateStock Lambda function
     const UpdateStocklayer = new lambda.LayerVersion(this, 'updateStockLayer', {
       removalPolicy: RemovalPolicy.DESTROY,
       code: lambda.Code.fromAsset('./functionLayers/updateStock')
@@ -105,6 +103,7 @@ export class BeamAiStack extends Stack {
       }
     });
 
+    // getOrderlayer and getOrder Lambda function
     const getOrderlayer = new lambda.LayerVersion(this, 'getOrderLayer', {
       removalPolicy: RemovalPolicy.DESTROY,
       code: lambda.Code.fromAsset('./functionLayers/getOrder')
@@ -123,11 +122,7 @@ export class BeamAiStack extends Stack {
       }
     });
 
-    // ---------------------------------------------------------------------------------------- //
-
     // ------------------ Creating RDS MySQL Database & Its Components --------------------------- //
-
-    
 
     // Creating Security Group
     const rdsSecurityGroup = new ec2.SecurityGroup(this, 'RDSSecuirtyGroup', {
@@ -176,7 +171,7 @@ export class BeamAiStack extends Stack {
     });
 
     // Lambda Should only be created & executed if DB Instance is created
-    dbInItLambda.addDependency(orderDBInstance)
+    dbInItLambda.addDependency(orderDBInstance);
 
     // Give the Lambda function permissions to read the secret
     dbSecret.grantRead(dbInItLambda);
@@ -186,12 +181,11 @@ export class BeamAiStack extends Stack {
 
     // Define a Custom Resource that will invoke the SingletonFunction
     const dbSchemaInitCustomResource = new customResources.AwsCustomResource(this, 'DbSchemaInitCustomResource', {
-      onCreate: { // You can also use onUpdate or onDelete if needed
+      onCreate: {
         service: 'Lambda',
         action: 'invoke',
         parameters: {
           FunctionName: dbInItLambda.functionName,
-          // Include additional parameters if needed
         },
         physicalResourceId: customResources.PhysicalResourceId.of('dbInitLambda')
       },
@@ -204,19 +198,17 @@ export class BeamAiStack extends Stack {
       installLatestAwsSdk: true
     });
 
-    // Make sure the Lambda is invoked only after being created
+    //Lambda is invoked only after being created
     dbSchemaInitCustomResource.node.addDependency(dbInItLambda);
 
     // ---------------------------------------------------------------------------------------- //
 
 
     // Granting Read Permissions to LambdaFunctions to access Queues
-    orderQueue.grantSendMessages(createOrder)
-    processQueue.grantSendMessages(processOrder)
+    orderQueue.grantSendMessages(createOrder);
+    processQueue.grantSendMessages(processOrder);
 
-    // ---------------------------------------------------------------------------------------- //
-
-    // ------------------ Creating API Gateway & its Methods --------------------------- //
+    // ------------------ API Gateway & its Methods --------------------------- //
 
     // Creating REST API Gateway.
     const orderAPIGateway = new apigateway.RestApi(this, 'orderAPIGateway', {
@@ -225,7 +217,7 @@ export class BeamAiStack extends Stack {
     });
 
     const items = orderAPIGateway.root.addResource('orders');
-    
+
     // Adding API Gateway Integration with Lambda Function for CreateOrder
     const lambdaIntegration = new apigateway.LambdaIntegration(createOrder, {
       requestTemplates: {
@@ -234,14 +226,14 @@ export class BeamAiStack extends Stack {
     });
 
     // Adding API Gateway Integration with Lambda Function for CreateOrder
-    const lambdaIntegrationGet = new apigateway.LambdaIntegration(getOrder)
+    const lambdaIntegrationGet = new apigateway.LambdaIntegration(getOrder);
 
     // Define Resource and Methods
     items.addMethod('GET', lambdaIntegrationGet);
     items.addMethod('POST', lambdaIntegration);
 
     //Granting Permissions to ApiGateway to Execute Lambda
-    createOrder.addPermission('createOrderLambdaPermission',{
+    createOrder.addPermission('createOrderLambdaPermission', {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       sourceArn: orderAPIGateway.arnForExecuteApi('POST', '/orders', 'prod')
     });
@@ -249,8 +241,7 @@ export class BeamAiStack extends Stack {
     getOrder.addPermission('getOrderLambdaPermission', {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       sourceArn: orderAPIGateway.arnForExecuteApi('GET', '/orders', 'prod')
-    })
-    // ---------------------------------------------------------------------------------------- //
+    });
 
     // ------------------ Adding Integration of Lambda and Queue --------------------------- //
 
@@ -264,7 +255,5 @@ export class BeamAiStack extends Stack {
       batchSize: 10,
       maxBatchingWindow: Duration.seconds(20)
     }));
-
-    // ---------------------------------------------------------------------------------------- //
   }
 }

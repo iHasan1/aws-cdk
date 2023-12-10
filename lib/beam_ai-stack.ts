@@ -230,8 +230,11 @@ export class BeamAiStack extends Stack {
       }
     });
 
+    // Adding API Gateway Integration with Lambda Function for CreateOrder
+    const lambdaIntegrationGet = new apigateway.LambdaIntegration(getOrder)
+
     // Define Resource and Methods
-    // items.addMethod('GET');
+    items.addMethod('GET', lambdaIntegrationGet);
     items.addMethod('POST', lambdaIntegration);
 
     //Granting Permissions to ApiGateway to Execute Lambda
@@ -239,6 +242,11 @@ export class BeamAiStack extends Stack {
       principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       sourceArn: orderAPIGateway.arnForExecuteApi('POST', '/orders', 'prod')
     });
+
+    getOrder.addPermission('getOrderLambdaPermission', {
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      sourceArn: orderAPIGateway.arnForExecuteApi('GET', '/orders', 'prod')
+    })
     // ---------------------------------------------------------------------------------------- //
 
     // ------------------ Adding Integration of Lambda and Queue --------------------------- //

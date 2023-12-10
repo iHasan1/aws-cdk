@@ -9,19 +9,38 @@ const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
 
 export const handler: APIGatewayProxyHandler = async (event) => {
 
+
+    console.log("##################### CREATE ORDER EVENT STARTS #########################");
     console.log(event);
+    console.log("##################### CREATE ORDER EVENT ENDS #########################");
 
     try {
         const secret: string = (process.env.JWT) ? process.env.JWT : '';
 
+        console.log("##################### JWT SECRET KEY #########################");
+        console.log(secret);
+        console.log("##################### JWT SECRET KEY ENDS #########################");
+
         const token = event.headers.Authorization || event.headers.authorization;
+
+        console.log("##################### JWT TOKEN Starts #########################");
+        console.log(token);
+        console.log("##################### JWT TOKEN ENDS #########################");
+
         if (!token) {
             return { statusCode: 401, body: JSON.stringify({ message: 'No token provided.' }) };
         }
 
+        console.log("##################### JWT VERIFICATION #########################");
         jwt.verify(token, secret);
+        console.log("##################### JWT VERIFICATION ENDS #########################");
 
-        const body: any = event.body || '{}';
+        const body: any = (event.body)? JSON.parse(event.body) : '{}';
+
+        console.log("##################### BODY STARTS #########################");
+        console.log(body);
+        console.log("##################### BODY ENDS #########################");
+
         if (!body.order_id || !body.customer_id || !body.order_date || !body.amount) {
             return { statusCode: 400, body: JSON.stringify({ message: 'Bad request: Missing required fields.' }) };
         }

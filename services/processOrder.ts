@@ -1,4 +1,4 @@
-=import {SQSEvent, Context } from 'aws-lambda'
+import {SQSEvent, Context } from 'aws-lambda'
 import * as AWS from 'aws-sdk';
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
 const mysql = require('mysql2/promise');

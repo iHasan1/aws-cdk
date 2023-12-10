@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 
 const client = new SecretsManagerClient({ region: "us-east-1" });
 
-async function getSecret(){
+async function getSecret() {
     const secretARN = process.env.SECRET_ARN;
     try {
         const response = await client.send(new GetSecretValueCommand({ SecretId: secretARN }));
@@ -45,6 +45,13 @@ exports.handler = async function (event: any, context: any) {
         );
     `;
 
+    const createInventoryEntries = `INSERT INTO Inventory
+    (name, quantity, unit_price, description)
+    VALUES
+    ('Blue Toy', 100, 10, 'A blue toy'),
+    ('Red Toy', 100, 15, 'A red toy'),
+    ('Yellow Toy', 100, 20, 'A yellow toy')`;
+
     try {
 
         const connection = await mysql.createConnection({
@@ -61,7 +68,10 @@ exports.handler = async function (event: any, context: any) {
 
         const inventoryResult = await connection.query(inventory);
         console.log('Inventory Schema initialized successfully');
-    
+
+        const insertInventory = await connection.query(createInventoryEntries);
+        console.log('Inventory inserted successfully');
+
         connection.end();
 
         return { statusCode: 200, body: JSON.stringify({ message: 'Success in initializing database' }) };
@@ -73,46 +83,46 @@ exports.handler = async function (event: any, context: any) {
 };
 
 
-// Useless Code For Reference 
+// Useless Code For Reference
 
-    // const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
+// const secret_name = "orderDBSecret9E787992-wX3P9i5cNcSa";
 
-    // const client = new SecretsManagerClient({
-    //     region: "us-east-1",
-    // });
+// const client = new SecretsManagerClient({
+//     region: "us-east-1",
+// });
 
-    // let response;
+// let response;
 
-    // try {
-    //     response = await client.send(
-    //         new GetSecretValueCommand({
-    //             SecretId: secret_name,
-    //             VersionStage: "AWSCURRENT",
-    //         })
-    //     );
-    // } catch (error) {
-    //     console.log(error);
-    //     throw error;
-    // }
+// try {
+//     response = await client.send(
+//         new GetSecretValueCommand({
+//             SecretId: secret_name,
+//             VersionStage: "AWSCURRENT",
+//         })
+//     );
+// } catch (error) {
+//     console.log(error);
+//     throw error;
+// }
 
-    // const secret = response.SecretString;
+// const secret = response.SecretString;
 
-    // const secretDB = JSON.parse(secret);
+// const secretDB = JSON.parse(secret);
 
-    // connection.connect(function (err: any) {
-    //     if (err) {
-    //         console.error('error connecting: ' + err.stack);
-    //         return;
-    //     }
-    //     console.log('connected as id ' + connection.threadId);
-    // });
+// connection.connect(function (err: any) {
+//     if (err) {
+//         console.error('error connecting: ' + err.stack);
+//         return;
+//     }
+//     console.log('connected as id ' + connection.threadId);
+// });
 
-    // await connection.query(customerOrder, (error: any, results: any, fields: any) => {
-    //     if (error) throw error;
-    //     console.log('Customer Order Schema initialized successfully');
-    // });
+// await connection.query(customerOrder, (error: any, results: any, fields: any) => {
+//     if (error) throw error;
+//     console.log('Customer Order Schema initialized successfully');
+// });
 
-    // await connection.query(inventory, (error: any, results: any, fields: any) => {
-    //     if (error) throw error;
-    //     console.log('Inventory Schema initialized successfully');
-    // });
+// await connection.query(inventory, (error: any, results: any, fields: any) => {
+//     if (error) throw error;
+//     console.log('Inventory Schema initialized successfully');
+// });

@@ -46,7 +46,7 @@ exports.handler = async function(event: SQSEvent, context: Context){
                         quantity: itemDetails.quantity
                     };
 
-                    const sqsUrl = 'https://sqs.us-east-1.amazonaws.com/503470143287/processQueue';
+                    const sqsUrl = (process.env.QUEUE_URL) ? process.env.QUEUE_URL : '';
 
                     // Send each item to the process queue
                     const params: AWS.SQS.SendMessageRequest = {

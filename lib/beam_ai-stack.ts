@@ -29,6 +29,18 @@ export class BeamAiStack extends Stack {
       }
     });
 
+    // Creating SQS Queues
+    const orderQueue = new sqs.Queue(this, 'orderQueue', {
+      queueName: 'orderQueue',
+      receiveMessageWaitTime: Duration.seconds(20)
+    });
+
+    
+    const processQueue = new sqs.Queue(this, 'processQueue', {
+      queueName: 'processQueue',
+      receiveMessageWaitTime: Duration.seconds(20)
+    });
+
     // ------------------ Creating Lambda Function for Services --------------------------- //
 
     const CreateOrderlayer = new lambda.LayerVersion(this, 'createOrderLayer', {
@@ -51,7 +63,8 @@ export class BeamAiStack extends Stack {
       layers: [CreateOrderlayer],
       functionName: 'CreateOrderLambda',
       environment: {
-        JWT: jwtSecretValue
+        JWT: jwtSecretValue,
+        QUEUE_URL: orderQueue.queueUrl
       }
     });
 
@@ -69,7 +82,8 @@ export class BeamAiStack extends Stack {
       layers: [ProcessOrderlayer],
       functionName: 'ProcessOrderLambda',
       environment: {
-        SECRET_ARN: dbSecret.secretArn
+        SECRET_ARN: dbSecret.secretArn,
+        QUEUE_URL: processQueue.queueUrl
       }
     });
 
@@ -195,20 +209,9 @@ export class BeamAiStack extends Stack {
 
     // ---------------------------------------------------------------------------------------- //
 
-    // ------------------ Creating SQS Queues --------------------------- //
-    
-    const orderQueue = new sqs.Queue(this, 'orderQueue', {
-      queueName: 'orderQueue',
-      receiveMessageWaitTime: Duration.seconds(20)
-    });
 
+    // Granting Read Permissions to LambdaFunctions to access Queues
     orderQueue.grantSendMessages(createOrder)
-
-    const processQueue = new sqs.Queue(this, 'processQueue', {
-      queueName: 'processQueue',
-      receiveMessageWaitTime: Duration.seconds(20)
-    });
-
     processQueue.grantSendMessages(processOrder)
 
     // ---------------------------------------------------------------------------------------- //

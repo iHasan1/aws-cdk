@@ -55,7 +55,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             }
         }
 
-        const sqsUrl = 'https://sqs.us-east-1.amazonaws.com/503470143287/orderQueue';
+        const sqsUrl = (process.env.QUEUE_URL) ? process.env.QUEUE_URL : '';
 
         const params: AWS.SQS.SendMessageRequest = {
             MessageBody: JSON.stringify(body),

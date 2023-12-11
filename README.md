@@ -1,24 +1,23 @@
-# Welcome to your CDK TypeScript project
+# This is a Demo Project made using AWS CDK as Infrastructure as Code.
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`BeamAiStack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+## Prerequisites
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+1. Have AWS CLI Installed on your Local machine
 
-## Useful commands
+2. Have node version 18 or greater available on Local machine
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+3. Have AWS CDK Installed on your local machine
 
-## Database - Inventory Insertion Query:
+## Steps to Recreate
 
-INSERT INTO Inventory
-    // (name, quantity, unit_price, description)
-    // VALUES
-    // ('Blue Toy', 100, 10, 'A blue toy'),
-    // ('Red Toy', 100, 15, 'A red toy'),
-    // ('Yellow Toy', 100, 20, 'A yellow toy')
+1. Configure your AWS account by typing the command `aws configure` on command line and providing your secret access key generated through the AWS Console.
+
+2. Open the Project and inside the `layer` & `db` folder find nodejs folder. Run `npm i` inside each folder to create the node modules.
+
+3. On the root directory, run the command `npm run build`. This compiles the typescript files to Javascript.
+
+4. If you are deploying for the first time, you need to run `cdk bootstrap`
+
+5. Run `cdk synth` that creates the CloudFormation template
+
+6. Run `cdk deploy` to deploy your project onto the AWS Cloud.
